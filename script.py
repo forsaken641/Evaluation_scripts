@@ -4,11 +4,13 @@ from get_source_by_gpt import *
 from tree_sitter import Language, Parser
 from io import StringIO
 
+#groundtruth
 xlsxpath="D:\\leak\\智能漏洞检测\\CWE-476\\规则\\测试数据\\test.xlsx"
+#待测软件所在路径
 database="D:\\leak\\智能漏洞检测\\CWE-476\\database\\"
 
 
-
+#得到函数名及起始和终止行号
 def get_func(filename):
     Language.build_library(
         'build/my-languages.so',
