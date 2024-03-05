@@ -1,0 +1,71 @@
+int
+lnet_notify(lnet_ni_t *ni, lnet_nid_t nid, int alive, unsigned long when)
+{
+	struct lnet_peer *lp = NULL;
+	unsigned long now = cfs_time_current();
+	int cpt = lnet_cpt_of_nid(nid);
+
+	LASSERT(!in_interrupt());
+
+	CDEBUG(D_NET, "%s notifying %s: %s\n",
+	       !ni ? "userspace" : libcfs_nid2str(ni->ni_nid),
+	       libcfs_nid2str(nid),
+	       alive ? "up" : "down");
+
+	if (ni &&
+	    LNET_NIDNET(ni->ni_nid) != LNET_NIDNET(nid)) {
+		CWARN("Ignoring notification of %s %s by %s (different net)\n",
+		      libcfs_nid2str(nid), alive ? "birth" : "death",
+		      libcfs_nid2str(ni->ni_nid));
+		return -EINVAL;
+	}
+
+	/* can't do predictions... */
+	if (cfs_time_after(when, now)) {
+		CWARN("Ignoring prediction from %s of %s %s %ld seconds in the future\n",
+		      !ni ? "userspace" : libcfs_nid2str(ni->ni_nid),
+		      libcfs_nid2str(nid), alive ? "up" : "down",
+		      cfs_duration_sec(cfs_time_sub(when, now)));
+		return -EINVAL;
+	}
+
+	if (ni && !alive &&	     /* LND telling me she's down */
+	    !auto_down) {		       /* auto-down disabled */
+		CDEBUG(D_NET, "Auto-down disabled\n");
+		return 0;
+	}
+
+	lnet_net_lock(cpt);
+
+	if (the_lnet.ln_shutdown) {
+		lnet_net_unlock(cpt);
+		return -ESHUTDOWN;
+	}
+
+	lp = lnet_find_peer_locked(the_lnet.ln_peer_tables[cpt], nid);
+	if (!lp) {
+		/* nid not found */
+		lnet_net_unlock(cpt);
+		CDEBUG(D_NET, "%s not found\n", libcfs_nid2str(nid));
+		return 0;
+	}
+
+	/*
+	 * We can't fully trust LND on reporting exact peer last_alive
+	 * if he notifies us about dead peer. For example ksocklnd can
+	 * call us with when == _time_when_the_node_was_booted_ if
+	 * no connections were successfully established
+	 */
+	if (ni && !alive && when < lp->lp_last_alive)
+		when = lp->lp_last_alive;
+
+	lnet_notify_locked(lp, !ni, alive, when);
+
+	if (ni)
+		lnet_ni_notify_locked(ni, lp);
+
+	lnet_peer_decref_locked(lp);
+
+	lnet_net_unlock(cpt);
+	return 0;
+}
