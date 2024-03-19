@@ -2,15 +2,12 @@ import requests
 from requests.auth import HTTPDigestAuth
 
 token="sgp_local_723d3e6d5135ee30333cfeae9c2efde278e17e0d"
-
+#依次输入软件名、查询语句、查询类型、token
 class Content:
-    def __init__(self,software,branch,hash,type,file,token,message=''):
+    def __init__(self,software,query,type,token=''):
         self.software=software
-        self.branch=branch
-        self.hash=hash
+        self.query=query
         self.type=type
-        self.file=file
-        self.message=message
         self.token=token
 
     def sourcegraph(self,query):
@@ -164,12 +161,12 @@ class Content:
 
     def get_result(self):
         if self.type=="file":
-            query="context:global repo:^"+self.software+"$ rev:@"+self.branch+":"+self.hash+" file:"+self.file
+            query=self.query
             result = self.sourcegraph(query)
             result=result['data']['search']['results']['results'][0]['file']['content']
 
         if self.type=="diff":
-            query = "context:global repo:^" + self.software + "$@"   + self.hash +" type:diff "+"message:'"+self.message+"'"
+            query = self.query
             #print(query)
             result=self.sourcegraph(query)
             result=result['data']['search']['results']['results'][0]['diffPreview']['value']
@@ -177,8 +174,8 @@ class Content:
 
 
 if __name__ == "__main__":
-    #test=Content("linux","master","0f10757","file","drivers/input/serio/i8042.c",token)
-    test=Content("linux","master","340d394a7","diff","",token,"fix crash at boot time")
+    test=Content("linux","context:global repo:^linux$ rev:@master:0f10757 file:drivers/input/serio/i8042.c","file",token)
+    #test = Content("linux","context:global repo:^linux$@340d394a7 type:diff message:\"fix crash at boot time\"","diff",token)
     data=test.get_result()
     try:
         print(data)
