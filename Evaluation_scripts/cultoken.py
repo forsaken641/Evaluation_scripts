@@ -34,6 +34,7 @@ if __name__ == "__main__":
     filelist=findfile(datapath)
     totol=0
     unable=0
+    funclist=[]
     for file in filelist:
         #print(file)
         content=get_func(file)
@@ -41,10 +42,13 @@ if __name__ == "__main__":
             for str in content:
                 if str:
                     #print(str[2])
-                    totol=totol+num_tokens_from_string(str[2],"cl100k_base")
+                    num=num_tokens_from_string(str[2],"cl100k_base")
+                    totol=totol+num
+                    funclist.append((str[3],num))
         else:
             unable=unable+1
             print(file)
             continue
     print("totol",totol)
     print(unable)
+    print(funclist)
