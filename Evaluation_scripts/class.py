@@ -1,7 +1,7 @@
 import requests
 from requests.auth import HTTPDigestAuth
 
-token="sgp_local_723d3e6d5135ee30333cfeae9c2efde278e17e0d"
+token="sgp_local_8876a7d89fa0bf4936b9f5eae6dcb08f50ee9295"
 #依次输入软件名、查询语句、查询类型、token
 class Content:
     def __init__(self,software,query,type,token=''):

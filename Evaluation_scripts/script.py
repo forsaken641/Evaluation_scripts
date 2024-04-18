@@ -10,30 +10,11 @@ xlsxpath="..\\测试数据\\test.xlsx"
 database="..\\database\\"
 
 
-#得到函数名及起始和终止行号
-def get_func(filename):
-    Language.build_library(
-        'build/my-languages.so',
-        [
-            './tree-sitter-cpp'
-        ]
-    )
-    CPP_LANGUAGE = Language('build/my-languages.so', 'cpp')
-
-    parser = Parser()
-    parser.set_language(CPP_LANGUAGE)
-
-
-    file=open(filename,'r')
-    code = StringIO(file.read()).read()
-
-    tree = parser.parse(bytes(code, "utf-8"))
-    root_node = tree.root_node
-    comments = []
-    functions = []
-    # 为了确定起始行
-    code = code.split("\n")
-    for child_node in root_node.children:
+def getcontent(father,code,depth):
+    functions=[]
+    if depth>4:
+        return functions
+    for child_node in father.children:
         if child_node.type == "function_definition":
             function_start_line = child_node.start_point[0]
             function_end_line = child_node.end_point[0]
@@ -44,8 +25,64 @@ def get_func(filename):
             else:
                 function_code = code[function_start_line]
                 # 起始行列  终止行列 函数代码 函数名
+            functions.append([child_node.start_point[0], child_node.end_point[0], function_code,
+                              code[function_start_line].split('(')[0].split(' ')[-1]])
+        else:
+            functions=functions+getcontent(child_node,code,depth+1)
+    return functions
 
-            functions.append([child_node.start_point[0], child_node.end_point[0], function_code,code[function_start_line].split('(')[0].split(' ')[-1]])
+#得到函数名及起始和终止行号
+def get_func(filename):
+    Language.build_library(
+        'build/my-languages.so',
+        [
+            './tree-sitter-cpp',
+            './tree-sitter-c'
+        ]
+    )
+    CPP_LANGUAGE = Language('build/my-languages.so', 'c')
+
+    parser = Parser()
+    parser.set_language(CPP_LANGUAGE)
+
+
+    file=open(filename,'r',encoding="utf-8")
+    code = StringIO(file.read()).read()
+
+    tree = parser.parse(bytes(code, "utf-8"))
+    root_node = tree.root_node
+    comments = []
+    functions = []
+    # 为了确定起始行
+    code = code.split("\n")
+    father=root_node
+    functions=getcontent(father,code,0)
+    # for child_node in root_node.children:
+    #     if child_node.type == "function_definition":
+    #         function_start_line = child_node.start_point[0]
+    #         function_end_line = child_node.end_point[0]
+    #         # 不在同一行
+    #         if function_start_line != function_end_line:
+    #             function_code = code[function_start_line:function_end_line + 1]
+    #             function_code = "\n".join(function_code)
+    #         else:
+    #             function_code = code[function_start_line]
+    #             # 起始行列  终止行列 函数代码 函数名
+    #         functions.append([child_node.start_point[0], child_node.end_point[0], function_code,
+    #                           code[function_start_line].split('(')[0].split(' ')[-1]])
+    #     else:
+    #         for child_node1 in child_node.children:
+    #             if child_node1.type == "function_definition":
+    #                 function_start_line = child_node1.start_point[0]
+    #                 function_end_line = child_node1.end_point[0]
+    #                 # 不在同一行
+    #                 if function_start_line != function_end_line:
+    #                     function_code = code[function_start_line:function_end_line + 1]
+    #                     function_code = "\n".join(function_code)
+    #                 else:
+    #                     function_code = code[function_start_line]
+    #                     # 起始行列  终止行列 函数代码 函数名
+    #                 functions.append([child_node1.start_point[0], child_node1.end_point[0], function_code,code[function_start_line].split('(')[0].split(' ')[-1]])
     return functions
 
 
