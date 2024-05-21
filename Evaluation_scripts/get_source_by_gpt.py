@@ -1,9 +1,16 @@
+import json
+
 import openai
 import extract_func
 import time
 import requests
 import tiktoken
-openai.api_key = "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"
+import os
+#openai.api_key = "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"
+openai.api_type = "azure"
+openai.api_base = "https://gpt-siyang.openai.azure.com/"
+openai.api_version = "2023-09-15-preview"
+openai.api_key = "8e80406745ca4ca9b65bed59fec7ae98"
 
 
 
@@ -45,19 +52,43 @@ def num_tokens_from_messages(messages, model="gpt-3.5-turbo-0301"):
 
 
 
-# 调用 GPT-3 API
-def generate_response(list):
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo-16k",
-        messages=list,
-        # max_tokens=400,
-        temperature=0,
-        n=1,
-        stop=None
-    )
-    #return response.choices[0].text.strip()
-    return response
+#调用 GPT-3 API
+def generate_response(prompt):
+    url = "https://gpt-siyang.openai.azure.com/openai/deployments/gpt35-turbo-instruct/completions?api-version=2023-09-15-preview"
+    headers = {
+        "Content-Type": "application/json",
+        "api-key": "8e80406745ca4ca9b65bed59fec7ae98"
+    }
+    data = {
+        "prompt": prompt,
+        "max_tokens": 1000,
+        "temperature": 1,
+        "frequency_penalty": 0,
+        "presence_penalty": 0,
+        "top_p": 0.5,
+        "best_of": 1,
+        "stop": None
+    }
+    # 发送 POST 请求
+    response = requests.post(url, headers=headers, json=data)
 
+    # 检查请求是否成功
+    if response.status_code == 200:
+        print("请求成功！")
+        #print("响应内容：", response.json())
+    else:
+        print("请求失败，状态码：", response.status_code)
+    return response.json()
+# def generate_response(prompt):
+#     response = openai.ChatCompletion.create(
+#         engine="gpt-3.5-turbo-16k",
+#         messages=prompt,
+#         temperature=1,
+#         top_p=0.5,
+#         frequency_penalty=0,
+#         presence_penalty=0,
+#         stop=None)
+#     return response
 
 def creat_message(filepath, startnum, endnum):
     func_text = extract_func.read_func(filepath, startnum, endnum)
@@ -79,9 +110,11 @@ def creat_message(filepath, startnum, endnum):
 if __name__ == '__main__':
     prompt=creat_message("D:\leak\智能漏洞检测\CWE-476\source\jasper_476\jasper_476\CVE-2021-3443\CVE-2021-3443_CWE-476_f94e7499a8b1471a4905c4f9c9e12e60_jp2_dec.c_OLD.c",99,491)
     list_msg=[]
+    list_msg.append({"role": "system", "content": "You are gpt-3.5-turbo."})
     list_msg.append({"role": "user", "content": prompt})
-    res=generate_response(list_msg)
-    print(res['choices'][0]['message']['content'])
+    res=generate_response(prompt)
+    result=json.loads(res['choices'][0]['text'])
+    print(result["result"])
 
 
 

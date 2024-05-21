@@ -44,12 +44,15 @@ def get_func(filename):
 
     parser = Parser()
     parser.set_language(CPP_LANGUAGE)
-
-
-    file=open(filename,'r',encoding="utf-8")
-    code = StringIO(file.read()).read()
+    try:
+        file=open(filename,'r',encoding="utf-8")
+        code = StringIO(file.read()).read()
+    except:
+        file = open(filename, 'r', encoding="gb18030")
+        code = StringIO(file.read()).read()
 
     tree = parser.parse(bytes(code, "utf-8"))
+
     root_node = tree.root_node
     comments = []
     functions = []

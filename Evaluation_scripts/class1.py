@@ -163,21 +163,28 @@ class Content:
         if self.type=="file":
             query=self.query
             result = self.sourcegraph(query)
-            result=result['data']['search']['results']['results'][0]['file']['content']
+            if result['data']['search']['results']['results']:
+                print(result)
+                result=result['data']['search']['results']['results'][0]['file']['content']
+            else:
+                result=''
 
         if self.type=="diff":
             query = self.query
             #print(query)
             result=self.sourcegraph(query)
-            result=result['data']['search']['results']['results'][0]['diffPreview']['value']
+            if result['data']['search']['results']['results']:
+                result=result['data']['search']['results']['results'][0]['diffPreview']['value']
+            else:
+                result=''
         return result
 
 
 if __name__ == "__main__":
-    test=Content("linux","context:global repo:^linux$ rev:@master:0f10757 file:drivers/input/serio/i8042.c","file",token)
+    test=Content("YPS-Instrument3","context:global repo:^YPS-Instrument3$ rev:@master:4de4a37 file:src/awtk_global.c","file",token)
     #test = Content("linux","context:global repo:^linux$@340d394a7 type:diff message:\"fix crash at boot time\"","diff",token)
     data=test.get_result()
-    try:
+    if data:
         print(data)
-    except:
+    else:
         print('failed')
